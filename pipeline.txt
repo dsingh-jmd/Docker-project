@@ -1,0 +1,30 @@
+pipeline {
+     agent any
+    stages {
+stage ('Get Code'){
+    steps{
+git branch: 'main', url: 'https://github.com/dsingh-jmd/Docker-project.git'        
+sshPublisher(publishers: [sshPublisherDesc(configName: 'Jenkins', transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: 'rsync -avh /var/lib/jenkins/workspace/cloudtech/Dockerfile root@13.233.156.136:/opt/', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', remoteDirectory: '', remoteDirectorySDF: false, removePrefix: '', sourceFiles: '')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
+    }
+
+}
+    stage('build'){
+        steps{
+            sshPublisher(publishers: [sshPublisherDesc(configName: 'Ansible', transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: '''cd /opt
+docker image build -t $JOB_NAME:v1.$BUILD_ID .
+docker image tag $JOB_NAME:v1.$BUILD_ID dsinghjmd/$JOB_NAME:v1.$BUILD_ID
+docker image tag $JOB_NAME:v1.$BUILD_ID dsinghjmd/$JOB_NAME:latest
+docker image push dsinghjmd/$JOB_NAME:v1.$BUILD_ID
+docker image push dsinghjmd/$JOB_NAME:latest
+docker image rmi $JOB_NAME:v1.$BUILD_ID dsinghjmd/$JOB_NAME:v1.$BUILD_ID dsinghjmd/$JOB_NAME:latest''', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', remoteDirectory: '', remoteDirectorySDF: false, removePrefix: '', sourceFiles: '')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
+        }
+    }
+    stage ('Deploy Image'){
+        steps{
+sshPublisher(publishers: [sshPublisherDesc(configName: 'Ansible', transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: 'ansible-playbook /root/sourcecode/docker1.yml', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', remoteDirectory: '', remoteDirectorySDF: false, removePrefix: '', sourceFiles: '')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
+
+        }
+    }
+
+    }
+}
